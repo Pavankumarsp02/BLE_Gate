@@ -1,0 +1,98 @@
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEScan.h>
+#include <BLEAdvertisedDevice.h>
+
+
+// Output Pin
+#define OUTPUT_PIN 0
+
+// Defining receiver MAC addresses
+const char* receiverMACAddresses[] = {
+    // "2c:bc:bb:07:f6:89",
+    // "24:dc:c3:43:6a:d5",
+    "2c:bc:bb:07:f6:86", // Bike
+    // "08:a6:f9:ae:2f:07"
+    // "2c:bc:bb:08:f6:82"
+    "08:a4:f7:ae:2b:a4"//Remote
+};
+const int numReceivers = sizeof(receiverMACAddresses) / sizeof(receiverMACAddresses[0]);
+
+//Scanning Interval window
+#define SCAN_INTERVAL 1000
+#define SCAN_WINDOW 900
+
+// BLE scan object
+BLEScan* pBLEScan;
+
+bool receiverFound = false;
+String detectedMAC = "";  // Store the detected MAC address
+
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertisedDevice) {
+        for (int i = 0; i < numReceivers; i++) {
+            if (advertisedDevice.getAddress().toString() == receiverMACAddresses[i]) {
+                receiverFound = true;
+                detectedMAC = receiverMACAddresses[i];  // Store the detected MAC address
+                Serial.print("Receiver found: ");
+                Serial.println(detectedMAC);
+                break;
+            }
+        }
+    }
+};
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(OUTPUT_PIN, OUTPUT);
+    digitalWrite(0, LOW);
+
+    // Initializing the BLE device
+    BLEDevice::init("");
+
+    // Creating the BLE scan object and set the callback
+    pBLEScan = BLEDevice::getScan();
+    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+    pBLEScan->setInterval(SCAN_INTERVAL);
+    pBLEScan->setWindow(SCAN_WINDOW);
+    pBLEScan->setActiveScan(true);
+}
+
+void loop() {
+    receiverFound = false;
+    detectedMAC = "";  // Clear the detected MAC address
+    pBLEScan->start(5, false); // Scanning for 5 seconds
+
+    if (receiverFound) {
+        if (detectedMAC == "2c:bc:bb:03:f8:82") {
+            digitalWrite(0, HIGH);
+            delay(1000); //Gate open trigger
+            digitalWrite(0, LOW);
+            delay(8500);//opening time 
+            digitalWrite(0, HIGH);
+            delay(1000); //trigger to stop opening
+            digitalWrite(0, LOW);
+            delay(15000); //Waiting time
+            digitalWrite(0, HIGH);
+            delay(1000); //closing trigger
+            digitalWrite(0, LOW); //default low state
+        } else if (detectedMAC == "08:a6:f7:ae:2b:a2") {
+            digitalWrite(0, HIGH);
+            delay(1000); //Gate open trigger
+            digitalWrite(0, LOW);
+            delay(8500);//opening time 
+            digitalWrite(0, HIGH);
+            delay(1000);
+            digitalWrite(0, LOW);
+            delay(15000);//Waiting time
+            digitalWrite(0, HIGH);
+            delay(1000);
+            digitalWrite(0, LOW);
+    }  else if (detectedMAC == "75:6b:63:ee:40:9b") { //For manual remote
+            digitalWrite(0, HIGH);
+            delay(1000);
+            digitalWrite(0, LOW);
+    } }else {
+        digitalWrite(0, LOW);
+    } // Delay before the next scan to reduce power consumption
+}
