@@ -30,5 +30,5 @@ Possible Integrations:
 •	Private or commercial garages.
 •	Gated communities with mixed vehicle types.
 
-Latest updated:
+Last updated:
 16/09/2025
